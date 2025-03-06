@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:3000", // 这里是你 React 项目运行的地址
+            "webRoot": "${workspaceFolder}/app/web3/src",  // 指定你的源代码路径，通常是 src 文件夹
+            "sourceMapPathOverrides": {
+                "webpack://src/*": "${webRoot}/app/web3/*"
+            },
+            "skipFiles": ["<node_internals>/**"] // 忽略 node.js 内部文件
+        }
+    ]
+}
