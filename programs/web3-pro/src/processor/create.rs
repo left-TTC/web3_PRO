@@ -1,8 +1,121 @@
-use crate::Web3Accounts;
+use crate::constant::Constants;
+use crate::Web3_create_Accounts;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
+use crate::utils::Utils;
+use spl_token::solana_program::program_pack::Pack;
+use anchor_spl::token;
+use spl_token::state::Account;
+use anchor_lang::error::Error;
+use spl_token::instruction::transfer;
+use anchor_lang::solana_program::program::invoke;
 
 
-pub fn create_process(ctx: Context<Web3Accounts>) -> ProgramResult{
+pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
+    Utils::create_check(&ctx)?;
+    //make sure is's only lowecase
+    if ctx.accounts.base_data.name != 
+        ctx.accounts.base_data.name.trim().to_lowercase() {
+        #[cfg(feature = "Debug")]
+        msg!("Domain names must be lower case and have no space");
+        return Err(ProgramError::InvalidArgument);
+    }
+    //without "."
+    if ctx.accounts.base_data.name.contains(".") {
+        #[cfg(feature = "Debug")]
+        msg!("format err");
+        return Err(ProgramError::InvalidArgument);
+    }
+    
+    let name_account_key = Utils::get_name_key(&ctx)?;
+    
+    if &name_account_key != ctx.accounts.name_account.key {
+        #[cfg(feature = "Debug")]
+        msg!("Provided wrong name account");
+        return Err(ProgramError::InvalidArgument);
+    }
+    //find auction account on solana
+    let (auction_state_key, _) = 
+        Pubkey::find_program_address(&[&name_account_key.to_bytes()], ctx.program_id);
+    if &auction_state_key != ctx.accounts.state.key {
+        #[cfg(feature = "Debug")]
+        msg!("An invalid name auctioning state account was provided");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    if !ctx.accounts.state.data_is_empty() {
+        #[cfg(feature = "Debug")]
+        msg!("The name auctioning state account is not empty.");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    let hashed_reverse_lookup = Utils::get_hashed_name(&name_account_key.to_string());
+
+    //get reverse lookup account's PDA with central state key
+    //what is central state key?
+
+    //compare reverse lookup key
+
+    //calculate the price
+    let mut domain_token_price = Utils::get_domian_price_checked(&ctx);
+    //get mint 
+    let token_acc = 
+        spl_token::state::Account::unpack(&ctx.accounts.buyer_token_source.data.borrow())
+            .map_err(|err|{
+                #[cfg(feature = "Debug")]
+                msg!("unpack err");
+                ProgramError::InvalidAccountData
+            })?;
+    //discount? if user use designated mint
+    
+    //referrer policy
+    let referrer_fee = 
+        if let Some(referrer_account) = ctx.accounts.referrer_opt {
+        //referrer's account should be owned by spl token;
+        Utils::check_account_owner(&referrer_account.to_account_info(), &token::ID)?;
+        //get the recommended fee ratio
+        let mut referrer_fee_pct = Constants::REFERRER_FEE_PCT;
+        //parse the Referrer Token Account
+        let referrer_token_acc =
+            spl_token::state::Account::unpack(&referrer_account.data.borrow()).unwrap();
+        //check whitelist
+
+        //get referral discounts and special fee percentages
+        let (discount, special_fee) = 
+            Utils::get_special_discount_and_fee(&referrer_token_acc.owner);
+        //apply discount
+        if let Some(discount) = discount {
+            domain_token_price = 100u64
+                .checked_sub(discount as u64)
+                .ok_or(Error::Overflow)?
+                .checked_mul(domain_token_price)
+                .ok_or(Error::Overflow)?
+                / 100;
+        };
+        if let Some(special_fee) = special_fee {
+            referrer_fee_pct = special_fee as u64
+        }
+
+        let referrer_fees_amount = domain_token_price.checked_mul(referrer_fee_pct).unwrap() / 100;
+
+        //transfer the referr fee to referrer
+        let transfer_ix = transfer(
+            &token::ID,
+            accounts.buyer_token_source.key,
+            referrer_account.key,
+            accounts.buyer.key,
+            &[],
+            referrer_fees_amount,
+        )?;
+
+
+    }else{
+        0
+    };
+
+
+
+
     Ok(())
 }
+
