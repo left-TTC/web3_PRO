@@ -2,7 +2,7 @@
 import React, {useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import './Home.css';
-import {check_domain_availability}  from '../components/contract_function';  
+import {queryPubkeyOwnedDomain, queryDomainAccountOwner}  from '../components/query_utils';  
 
 export default function Home() {
   const [domain, setDomain] = useState('');
@@ -13,8 +13,8 @@ export default function Home() {
 
   const handleCheckDomain = async () => {
     try {
-      const result = await check_domain_availability(domain); 
-      if(result !== ""){
+      const result = await queryDomainAccountOwner(domain); 
+      if(result !== null){
         navigate('./about', {state: {pda: result, domain: domain}})
       }
     } catch (error) {
