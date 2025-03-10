@@ -56,7 +56,7 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
     //compare reverse lookup key
 
     //calculate the price
-    let mut domain_token_price = Utils::get_domian_price_checked(&ctx);
+    let mut domain_token_price = Utils::get_domian_price_checked(&ctx)?;
     //get mint 
     let token_acc = 
         spl_token::state::Account::unpack(&ctx.accounts.buyer_token_source.data.borrow())
@@ -69,7 +69,7 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
     
     //referrer policy
     let referrer_fee = 
-        if let Some(referrer_account) = ctx.accounts.referrer_opt {
+        if let Some(referrer_account) = &ctx.accounts.referrer_opt {
         //referrer's account should be owned by spl token;
         Utils::check_account_owner(&referrer_account.to_account_info(), &token::ID)?;
         //get the recommended fee ratio
@@ -77,11 +77,13 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
         //parse the Referrer Token Account
         let referrer_token_acc =
             spl_token::state::Account::unpack(&referrer_account.data.borrow()).unwrap();
+        //Explicitly converse to anchor architecture
+        let referrer_token_owner_key = Pubkey::new_from_array(referrer_token_acc.owner.to_bytes());
         //check whitelist
 
         //get referral discounts and special fee percentages
         let (discount, special_fee) = 
-            Utils::get_special_discount_and_fee(&referrer_token_acc.owner);
+            Utils::get_special_discount_and_fee(&referrer_token_owner_key);
         //apply discount
         if let Some(discount) = discount {
             domain_token_price = 100u64

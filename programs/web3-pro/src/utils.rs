@@ -187,7 +187,7 @@ pub mod Utils{
         return multiplier * 1_000;
     }
 
-    pub fn get_domian_price_checked (ctx: &Context<Web3_create_Accounts>) -> u64{
+    pub fn get_domian_price_checked (ctx: &Context<Web3_create_Accounts>) -> Result<u64>{
         let usd_price = get_usd_price(get_grapheme_len(&ctx.accounts.base_data.name));
         //get buyer's token type
         //this is a kind of account that created by 
@@ -207,7 +207,8 @@ pub mod Utils{
         
         //connet pyth and get the value
 
-        Ok(11)
+        let test_value: u64 = 7;
+        Ok(test_value)
     }
 
 

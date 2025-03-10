@@ -1,5 +1,5 @@
 use anchor_lang::*;
-use anchor_lang::solana_program::decode_error::DecodeError;
+use anchor_lang::solana_program::program_error::ProgramError;
 use thiserror::Error;
 use num_derive::FromPrimitive;
 
@@ -8,4 +8,10 @@ use num_derive::FromPrimitive;
 pub enum Error {
     #[error("Overflow")]
     Overflow,
+}
+
+impl From<crate::error::Error> for ProgramError {
+    fn from(e: Error) -> Self {
+        ProgramError::Custom(e as u32)
+    }
 }
