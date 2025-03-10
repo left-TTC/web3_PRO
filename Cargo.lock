@@ -3397,7 +3397,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "num-derive",
+ "num-traits",
  "spl-token 7.0.0",
+ "thiserror 2.0.12",
  "unicode-segmentation",
 ]
 

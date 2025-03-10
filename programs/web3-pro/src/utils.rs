@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 use crate::Web3_create_Accounts;
 use crate::constant::Constants;
+use crate::Web3_delete_Accounts;
 use anchor_lang::solana_program::system_program;
 use anchor_spl::token;
 use anchor_lang::solana_program::sysvar;
@@ -17,7 +18,7 @@ pub mod Utils{
     use super::*;
     
     //check account keys
-    fn check_account_key(account: &AccountInfo, key: &Pubkey) -> ProgramResult {
+    pub fn check_account_key(account: &AccountInfo, key: &Pubkey) -> ProgramResult {
         if account.key != key {
             #[cfg(feature = "Debug")]
             msg!("Wrong account key: {} should be {}", account.key, key);
@@ -46,7 +47,7 @@ pub mod Utils{
     }
 
     //external interface
-    pub fn create_check(ctx: &Context<Web3_create_Accounts>) -> ProgramResult{
+    pub fn create_create_check(ctx: &Context<Web3_create_Accounts>) -> ProgramResult{
         //Check the incoming domain name service contract
         check_account_key (&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
         //
@@ -72,6 +73,28 @@ pub mod Utils{
 
         check_signer( &ctx.accounts.buyer)?;
         check_signer(&ctx.accounts.fee_payer)?;
+
+        Ok(())
+    }
+
+    pub fn check_delete_key (ctx: &Context<Web3_delete_Accounts>) -> ProgramResult {
+        check_account_key(&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
+        check_account_key(&ctx.accounts.system_program, &system_program::ID)?;
+        //central_state
+
+
+        //check the account owner: web3 naming service or current program
+        check_account_owner(&ctx.accounts.name_account, &Constants::WEB_NAMEING_SERVICE)
+            .or_else(|_| check_account_owner(&ctx.accounts.name_account, &ctx.program_id))?;
+        check_account_owner(&ctx.accounts.reverse_lookup, &Constants::WEB_NAMEING_SERVICE)
+            .or_else(|_| check_account_owner(&ctx.accounts.reverse_lookup, &ctx.program_id))?;
+        //check the resealing account
+        check_account_owner(&ctx.accounts.resealing_state, &system_program::ID)
+            .or_else(|_| check_account_owner(&ctx.accounts.resealing_state, &*ctx.program_id))?;
+        check_account_owner(&ctx.accounts.auction_state, &system_program::ID)
+            .or_else(|_| check_account_owner(&ctx.accounts.auction_state, &*ctx.program_id))?;
+
+        check_signer(&ctx.accounts.owner)?;
 
         Ok(())
     }
@@ -112,6 +135,7 @@ pub mod Utils{
         (name_account_key, seeds_vec)
     }
 
+    //calculate the domain's PDA
     pub fn get_name_key (ctx: &Context<Web3_create_Accounts>) -> Result<Pubkey> {
         let hashed_name = get_hashed_name(&ctx.accounts.base_data.name);
         let root_key = if let Some(root) = &ctx.accounts.root_domain_account {
@@ -125,6 +149,18 @@ pub mod Utils{
             &root_key,
         );
         Ok(name_account_key)
+    }
+
+    //calculate the reverse account's PDA
+    pub fn get_reverse_key (ctx: &Context<Web3_delete_Accounts>) -> Result<Pubkey> {
+        //seeds composition: domain account's pubkey
+        let hased_reverse_look_up = get_hashed_name(&ctx.accounts.name_account.key.to_string());
+        let (reverse_lookup_key, _) = get_seeds_and_key(
+            ctx.program_id,
+            hased_reverse_look_up,
+            &Some(*ctx.accounts.root_domain_account.key));
+
+        Ok(reverse_lookup_key)
     }
 
 
@@ -171,7 +207,7 @@ pub mod Utils{
         
         //connet pyth and get the value
 
-        Ok(100)
+        Ok(11)
     }
 
 

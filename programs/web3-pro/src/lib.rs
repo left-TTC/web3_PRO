@@ -8,6 +8,7 @@ pub mod processor;
 pub mod constant;
 pub mod cpi;
 pub mod utils;
+pub mod error;
 
 #[program]
 pub mod web3_pro {
@@ -22,6 +23,7 @@ pub mod web3_pro {
     pub fn delete_domain(ctx: Context<Web3_delete_Accounts>) -> ProgramResult {
         processor::delete_domain(ctx)
     }
+
 
 }
 
@@ -64,17 +66,36 @@ pub struct Web3_create_Accounts<'info> {
     referrer_opt: Option<UncheckedAccount<'info>>,
 }
 
+
 #[derive(Accounts)]
 pub struct Web3_delete_Accounts<'info> {
-    pub spl_name_service: UncheckedAccount<'info>,  
+    web3_name_service: UncheckedAccount<'info>,  
 
-    pub root_domain_account: UncheckedAccount<'info>,  
+    system_program: Program<'info, System>,
 
+    root_domain_account: UncheckedAccount<'info>,  
+    //domain account
     name_account: UncheckedAccount<'info>,
 
-    pub buyer: Signer<'info>, 
+    owner: Signer<'info>, 
 
-    pub reverse_lookup: UncheckedAccount<'info>, 
+    reverse_lookup: UncheckedAccount<'info>, 
+
+    refund_targhet: UncheckedAccount<'info>,
+
+    //?
+    //record the status of assets resealing
+    /*such as 
+        price
+        shelf time
+        has it been sold?
+        profit attribution
+     */
+    resealing_state: UncheckedAccount<'info>,
+
+    central_state: UncheckedAccount<'info>, 
+
+    auction_state: UncheckedAccount<'info>,
 }
 
 #[account]
@@ -85,7 +106,6 @@ pub struct web3_data{
 #[account]
 pub struct base_info{
     pub lamports: u64,
-    pub hashed_name: Vec<u8>,
     pub space: u32,
     pub name: String,
 }

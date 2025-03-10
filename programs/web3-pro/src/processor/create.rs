@@ -5,14 +5,13 @@ use anchor_lang::solana_program::entrypoint::ProgramResult;
 use crate::utils::Utils;
 use spl_token::solana_program::program_pack::Pack;
 use anchor_spl::token;
-use spl_token::state::Account;
-use anchor_lang::error::Error;
-use spl_token::instruction::transfer;
-use anchor_lang::solana_program::program::invoke;
+use crate::error::Error;
+use anchor_spl::token::{Transfer, transfer};
+use crate::cpi::Cpi;
 
 
 pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
-    Utils::create_check(&ctx)?;
+    Utils::create_create_check(&ctx)?;
     //make sure is's only lowecase
     if ctx.accounts.base_data.name != 
         ctx.accounts.base_data.name.trim().to_lowercase() {
@@ -99,21 +98,51 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
         let referrer_fees_amount = domain_token_price.checked_mul(referrer_fee_pct).unwrap() / 100;
 
         //transfer the referr fee to referrer
+        //Construct a Transfer structure
+        let transfer_info = Transfer{
+            from: ctx.accounts.buyer_token_source.to_account_info(),
+            to: referrer_account.to_account_info(),
+            authority: ctx.accounts.buyer.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.spl_token_program.to_account_info();
+        //package as ctx
+        let transfer_ctx = CpiContext::new(cpi_program, transfer_info);
+        //package as ctx and execute transfer
         let transfer_ix = transfer(
-            &token::ID,
-            accounts.buyer_token_source.key,
-            referrer_account.key,
-            accounts.buyer.key,
-            &[],
+            transfer_ctx,
             referrer_fees_amount,
         )?;
-
-
+        //return the amount
+        referrer_fees_amount
     }else{
         0
     };
 
+    //transfer amount to vault
+    let vault_transfer_info = Transfer {
+        from: ctx.accounts.buyer_token_source.to_account_info(),
+        to: ctx.accounts.vault.to_account_info(),
+        authority: ctx.accounts.buyer.to_account_info(),
+    };
 
+    let cpi_program = ctx.accounts.spl_token_program.to_account_info();
+
+    let vault_transfer_ctx = CpiContext::new(cpi_program, vault_transfer_info);
+
+    let valut_transfer_ix = transfer(
+        vault_transfer_ctx,
+        domain_token_price,
+    );
+
+    //create domain name -- CPI call -> web3 naming service
+    //fristly: get the rent info form solana
+    let rent = Rent::get();
+    let hashed_name = Utils::get_hashed_name(&ctx.accounts.base_data.name);
+    Cpi::create_name_account(&ctx, hashed_name/*, signer_seeds */)?;
+
+    //cpi call --> create reverse_look_up account
+
+    Cpi::create_reverse_lookup_account(&ctx)?;
 
 
     Ok(())
