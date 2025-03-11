@@ -2,6 +2,23 @@ body {
   overflow-x: hidden;
   background-color: #6553ef; 
   overflow: scroll;
+  display: flex;
+  justify-content: center;
+  height: 140vh; 
+}
+
+#root, .app-container {
+  width: 100%;
+  max-width: 1200px;        /* 限制最大宽度，避免内容过于拉伸 */
+  background-color: #fff;   /* 白色背景让内容更清晰 */
+  border-radius: 12px;      /* 圆角边框提升视觉效果 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* 添加阴影增强立体感 */
+  padding: 20px;            /* 内边距增加空间感 */
+  text-align: center;       /* 文字内容居中 */
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
 }
 
 code {

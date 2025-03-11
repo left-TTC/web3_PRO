@@ -1,16 +1,45 @@
-.home-container {
+.check-container {
     text-align: center;
-    padding: 20px;
-    background-color: #8eb9f2;
+    gap: 20px;
+    background-color: #d4d1f2;
     display: flex;
     justify-content: center;
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: 10PX;
+    width: 80%;
+    height: 12%;
+    border: 5px solid #f08787;
+    border-radius: 20px;
+    margin-top: 150px;
   }
   
-  .home-container button{
-    width: 200px;
+  .check-container button{
+    width: 120px;
     height: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 30px;
+    color: blue;
+    background-color: hsl(162, 83%, 63%);
+    border: 3px solid #f08787;
+    font-size: 17px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   }
+
+  .check-container input{
+    padding-left: 30px;
+    border-radius: 25px;
+    height: 80px;
+    width: 55%;
+    outline: none;
+    border: 2px solid #f08787;
+    font-size: 19px;
+  }
+
+  .domain-input::placeholder {
+    color: rgb(127, 195, 195);
+  }
+

@@ -1,20 +1,19 @@
 //This is a method library
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
-use crate::Web3_create_Accounts;
+use crate::Web3CreateAccounts;
 use crate::constant::Constants;
-use crate::Web3_delete_Accounts;
+use crate::Web3DeleteAccounts;
 use anchor_lang::solana_program::system_program;
 use anchor_spl::token;
 use anchor_lang::solana_program::sysvar;
 use anchor_lang::solana_program::hash::hashv;
 use unicode_segmentation::UnicodeSegmentation;
-use spl_token::state::Account;
-use spl_token::solana_program::program_pack::Pack;
 
 
 
 pub mod Utils{
+
     use super::*;
     
     //check account keys
@@ -47,7 +46,7 @@ pub mod Utils{
     }
 
     //external interface
-    pub fn create_create_check(ctx: &Context<Web3_create_Accounts>) -> ProgramResult{
+    pub fn create_create_check(ctx: &Context<Web3CreateAccounts>) -> ProgramResult{
         //Check the incoming domain name service contract
         check_account_key (&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
         //
@@ -77,7 +76,7 @@ pub mod Utils{
         Ok(())
     }
 
-    pub fn check_delete_key (ctx: &Context<Web3_delete_Accounts>) -> ProgramResult {
+    pub fn check_delete_key (ctx: &Context<Web3DeleteAccounts>) -> ProgramResult {
         check_account_key(&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
         check_account_key(&ctx.accounts.system_program, &system_program::ID)?;
         //central_state
@@ -136,7 +135,7 @@ pub mod Utils{
     }
 
     //calculate the domain's PDA
-    pub fn get_name_key (ctx: &Context<Web3_create_Accounts>) -> Result<Pubkey> {
+    pub fn get_name_key (ctx: &Context<Web3CreateAccounts>) -> Result<Pubkey> {
         let hashed_name = get_hashed_name(&ctx.accounts.base_data.name);
         let root_key = if let Some(root) = &ctx.accounts.root_domain_account {
             Some(*root.key)
@@ -152,7 +151,7 @@ pub mod Utils{
     }
 
     //calculate the reverse account's PDA
-    pub fn get_reverse_key (ctx: &Context<Web3_delete_Accounts>) -> Result<Pubkey> {
+    pub fn get_reverse_key (ctx: &Context<Web3DeleteAccounts>) -> Result<Pubkey> {
         //seeds composition: domain account's pubkey
         let hased_reverse_look_up = get_hashed_name(&ctx.accounts.name_account.key.to_string());
         let (reverse_lookup_key, _) = get_seeds_and_key(
@@ -187,7 +186,7 @@ pub mod Utils{
         return multiplier * 1_000;
     }
 
-    pub fn get_domian_price_checked (ctx: &Context<Web3_create_Accounts>) -> Result<u64>{
+    pub fn get_domian_price_checked (ctx: &Context<Web3CreateAccounts>) -> Result<u64>{
         let usd_price = get_usd_price(get_grapheme_len(&ctx.accounts.base_data.name));
         //get buyer's token type
         //this is a kind of account that created by 
@@ -200,10 +199,9 @@ pub mod Utils{
             pub delegated_amount: u64,  
             pub close_authority: Option<Pubkey>, 
         } */
+       //get the mint
         let buyer_token_mint = 
-            Account::unpack_from_slice(&ctx.accounts.buyer_token_source.data.borrow())
-                .unwrap()
-                .mint;
+            get_spl_Account_mint(&ctx.accounts.buyer_token_source.data.borrow())?;
         
         //connet pyth and get the value
 
@@ -211,6 +209,29 @@ pub mod Utils{
         Ok(test_value)
     }
 
+    pub fn get_spl_Account_mint (spl_account_data: &[u8]) -> Result<Pubkey>{
+        if spl_account_data.len() < 32 {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
+        let mint_bytes: [u8; 32] = spl_account_data[..32]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidAccountData)?;
+
+        Ok(Pubkey::new_from_array(mint_bytes))
+    }
+
+    pub fn get_spl_Account_owner (spl_account_data: &[u8]) -> Result<Pubkey>{
+        if spl_account_data.len() < 64 {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
+        let owner_bytes: [u8; 32] = spl_account_data[32..64]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidAccountData)?;
+
+        Ok(Pubkey::new_from_array(owner_bytes))
+    }
 
 
 
@@ -219,6 +240,11 @@ pub mod Utils{
     pub fn get_special_discount_and_fee (referrer_key: &Pubkey) -> (Option<u8>, Option<u8>) {
         (Some(1), Some(2))
     }
+
+
+
+
+
 
 
 

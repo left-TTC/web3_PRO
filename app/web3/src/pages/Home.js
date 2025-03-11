@@ -2,7 +2,8 @@
 import React, {useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import './Home.css';
-import {queryPubkeyOwnedDomain, queryDomainAccountOwner}  from '../components/query_utils';  
+import {queryPubkeyOwnedDomain, queryDomainAccountOwner}  from '../functions/query_utils';
+import TopBar from "../components/topbar";
 
 export default function Home() {
   const [domain, setDomain] = useState('');
@@ -25,15 +26,15 @@ export default function Home() {
 
   //return HTML space
   return (
-    <div className="home-container">
+    <div className="check-container">
        <input 
         type="text"
         value={domain} 
         onChange={(e) => setDomain(e.target.value)} 
-        placeholder="input"
+        placeholder="Start .web3 searching"
         className="domain-input" 
       />
-      <button onClick={handleCheckDomain}>Check Domain</button>
+      <button onClick={handleCheckDomain}>search</button>
     </div>
   );
 }

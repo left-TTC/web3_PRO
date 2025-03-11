@@ -1,16 +1,15 @@
 use crate::constant::Constants;
-use crate::Web3_create_Accounts;
+use crate::Web3CreateAccounts;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 use crate::utils::Utils;
-use spl_token::solana_program::program_pack::Pack;
 use anchor_spl::token;
 use crate::error::Error;
 use anchor_spl::token::{Transfer, transfer};
 use crate::cpi::Cpi;
 
 
-pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
+pub fn create_process(ctx: Context<Web3CreateAccounts>) -> ProgramResult{
     Utils::create_create_check(&ctx)?;
     //make sure is's only lowecase
     if ctx.accounts.base_data.name != 
@@ -59,12 +58,7 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
     let mut domain_token_price = Utils::get_domian_price_checked(&ctx)?;
     //get mint 
     let token_acc = 
-        spl_token::state::Account::unpack(&ctx.accounts.buyer_token_source.data.borrow())
-            .map_err(|err|{
-                #[cfg(feature = "Debug")]
-                msg!("unpack err");
-                ProgramError::InvalidAccountData
-            })?;
+        Utils::get_spl_Account_mint(&ctx.accounts.buyer_token_source.data.borrow())?;
     //discount? if user use designated mint
     
     //referrer policy
@@ -74,11 +68,8 @@ pub fn create_process(ctx: Context<Web3_create_Accounts>) -> ProgramResult{
         Utils::check_account_owner(&referrer_account.to_account_info(), &token::ID)?;
         //get the recommended fee ratio
         let mut referrer_fee_pct = Constants::REFERRER_FEE_PCT;
-        //parse the Referrer Token Account
-        let referrer_token_acc =
-            spl_token::state::Account::unpack(&referrer_account.data.borrow()).unwrap();
-        //Explicitly converse to anchor architecture
-        let referrer_token_owner_key = Pubkey::new_from_array(referrer_token_acc.owner.to_bytes());
+        //parse the Referrer Token Account and get the owner
+        let referrer_token_owner_key = Utils::get_spl_Account_owner(&referrer_account.data.borrow())?;
         //check whitelist
 
         //get referral discounts and special fee percentages
