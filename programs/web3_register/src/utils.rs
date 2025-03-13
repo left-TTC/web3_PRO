@@ -17,10 +17,10 @@ pub mod Utils{
     use super::*;
     
     //check account keys
-    pub fn check_account_key(account: &AccountInfo, key: &Pubkey) -> ProgramResult {
-        if account.key != key {
+    pub fn check_account_key(account_key: &Pubkey, key: &Pubkey) -> ProgramResult {
+        if account_key != key {
             #[cfg(feature = "Debug")]
-            msg!("Wrong account key: {} should be {}", account.key, key);
+            msg!("Wrong account key: {} should be {}", account_key, key);
             return Err(ProgramError::InvalidArgument);
         } 
         Ok(())
@@ -48,19 +48,19 @@ pub mod Utils{
     //external interface
     pub fn create_create_check(ctx: &Context<Web3CreateAccounts>) -> ProgramResult{
         //Check the incoming domain name service contract
-        check_account_key (&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
+        check_account_key (ctx.accounts.web3_name_service.key, &Constants::WEB_NAMEING_SERVICE)?;
         //
         if let Some(root) = &ctx.accounts.root_domain_account{
-            check_account_key(root, &Constants::ROOT_DOMAIN_ACCOUNT)?;
+            check_account_key(root.key, &Constants::ROOT_DOMAIN_ACCOUNT)?;
         }
         //
-        check_account_key(&ctx.accounts.system_program, &system_program::ID)?;
+        //check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
         //check central_state account
         //check_account_key(&ctx.accounts.central_state, &central_state::key)?;
         //
-        check_account_key(&ctx.accounts.spl_token_program, &token::ID)?;
+        check_account_key(ctx.accounts.spl_token_program.key, &token::ID)?;
         //
-        check_account_key(&ctx.accounts.rent_sysvar, &sysvar::ID)?;
+        check_account_key(ctx.accounts.rent_sysvar.key, &sysvar::ID)?;
         
         //The owner of the name account must be a system program
         //the domain owner will be recorded in account's data
@@ -77,16 +77,16 @@ pub mod Utils{
     }
 
     pub fn check_delete_key (ctx: &Context<Web3DeleteAccounts>) -> ProgramResult {
-        check_account_key(&ctx.accounts.web3_name_service, &Constants::WEB_NAMEING_SERVICE)?;
-        check_account_key(&ctx.accounts.system_program, &system_program::ID)?;
+        check_account_key(ctx.accounts.web3_name_service.key, &Constants::WEB_NAMEING_SERVICE)?;
+        check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
         //central_state
 
 
         //check the account owner: web3 naming service or current program
         check_account_owner(&ctx.accounts.name_account, &Constants::WEB_NAMEING_SERVICE)
             .or_else(|_| check_account_owner(&ctx.accounts.name_account, &ctx.program_id))?;
-        check_account_owner(&ctx.accounts.reverse_lookup, &Constants::WEB_NAMEING_SERVICE)
-            .or_else(|_| check_account_owner(&ctx.accounts.reverse_lookup, &ctx.program_id))?;
+        // check_account_owner(&ctx.accounts.reverse_lookup, &Constants::WEB_NAMEING_SERVICE)
+        //     .or_else(|_| check_account_owner(&ctx.accounts.reverse_lookup, &ctx.program_id))?;
         //check the resealing account
         check_account_owner(&ctx.accounts.resealing_state, &system_program::ID)
             .or_else(|_| check_account_owner(&ctx.accounts.resealing_state, &*ctx.program_id))?;
@@ -135,17 +135,12 @@ pub mod Utils{
     }
 
     //calculate the domain's PDA
-    pub fn get_name_key (ctx: &Context<Web3CreateAccounts>) -> Result<Pubkey> {
-        let hashed_name = get_hashed_name(&ctx.accounts.base_data.name);
-        let root_key = if let Some(root) = &ctx.accounts.root_domain_account {
-            Some(*root.key)
-        }else{
-            None
-        };
+    pub fn get_name_key (root_opt: Option<Pubkey>, name: &String) -> Result<Pubkey> {
+        let hashed_name = get_hashed_name(name);
         let (name_account_key, _) = get_seeds_and_key(
             &Constants::WEB_NAMEING_SERVICE,
             hashed_name,
-            &root_key,
+            &root_opt,
         );
         Ok(name_account_key)
     }
@@ -186,8 +181,8 @@ pub mod Utils{
         return multiplier * 1_000;
     }
 
-    pub fn get_domian_price_checked (ctx: &Context<Web3CreateAccounts>) -> Result<u64>{
-        let usd_price = get_usd_price(get_grapheme_len(&ctx.accounts.base_data.name));
+    pub fn get_domian_price_checked (ctx: &Context<Web3CreateAccounts>, name: &String) -> Result<u64>{
+        let usd_price = get_usd_price(get_grapheme_len(name));
         //get buyer's token type
         //this is a kind of account that created by 
         /*pub struct Account {

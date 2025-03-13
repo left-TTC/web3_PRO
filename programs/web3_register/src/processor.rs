@@ -7,10 +7,13 @@ use delete::delete_process;
 pub mod create;
 pub mod delete;
 
-pub fn create_domain(ctx: Context<Web3CreateAccounts>) -> ProgramResult {
+pub fn create_domain(
+    ctx: Context<Web3CreateAccounts>,
+    name: String,
+    ipfs: Option<Vec<u8>>,) -> ProgramResult {
     #[cfg(feature = "Debug")]
     msg!("create instruction");
-    create_process(ctx)
+    create_process(ctx, name, ipfs)
 }
 
 
@@ -19,3 +22,4 @@ pub fn delete_domain(ctx: Context<Web3DeleteAccounts>) -> ProgramResult {
     msg!("delete instruction");
     delete_process(ctx)
 }
+

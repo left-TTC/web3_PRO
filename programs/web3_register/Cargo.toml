@@ -1,12 +1,12 @@
 [package]
-name = "web3"
+name = "web3register"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "web3"
+name = "web3register"
 
 
 [features]
@@ -15,7 +15,7 @@ cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 Debug = []
 
 
@@ -26,4 +26,9 @@ unicode-segmentation = "1.12.0"
 thiserror = "2.0.12"
 num-traits = "0.2.19"
 num-derive = "0.4.2"
+
+[dev-dependencies]
+anchor-lang = { version = "0.30.1"}
+
+
 
