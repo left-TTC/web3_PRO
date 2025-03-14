@@ -1,10 +1,10 @@
 use anchor_lang::{ prelude::*};
 use anchor_lang::solana_program::entrypoint::ProgramResult;
-
+use left_utils::declare_central_state;
 
 
 declare_id!("Dbpxr1SxxmjpLBRAxwPqQ8JBZeRUU2LCyrThpLdnBTRY");
-
+declare_central_state!("Dbpxr1SxxmjpLBRAxwPqQ8JBZeRUU2LCyrThpLdnBTRY");
 
 pub mod processor;
 pub mod constant;
@@ -26,8 +26,11 @@ pub mod web3Regitser {
         processor::create_domain(ctx, name, ipfs)
     }
     
-    pub fn delete_domain(ctx: Context<Web3DeleteAccounts>) -> ProgramResult {
-        processor::delete_domain(ctx)
+    pub fn delete_domain(
+        ctx: Context<Web3DeleteAccounts>,
+        target: Pubkey
+        ) -> ProgramResult {
+        processor::delete_domain(ctx, target)
     }
 
 
@@ -58,11 +61,11 @@ pub struct Web3CreateAccounts<'info> {
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     state: UncheckedAccount<'info>, 
 
+    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    reverse_lookup: UncheckedAccount<'info>,  
 
-    //reverse_lookup: UncheckedAccount<'info>,  
-
- 
-    //central_state: UncheckedAccount<'info>,  
+    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    central_state: UncheckedAccount<'info>,  
 
     //Providing token services
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
@@ -80,39 +83,6 @@ pub struct Web3CreateAccounts<'info> {
     referrer_opt: Option<UncheckedAccount<'info>>,
 }
 
-/*  central_state
-pub fn process(item: TokenStream) -> TokenStream {
-    let item_copy = item.clone();
-    let str: LitStr = syn::parse(item.into()).unwrap();
-    let key = str.value();
-
-    let pubkey = Pubkey::from_str(&key).unwrap();
-
-    let pubkey_bytes = pubkey.to_bytes();
-
-    let (central_state, central_state_nonce) =
-        Pubkey::find_program_address(&[&pubkey_bytes], &pubkey);
-
-    let central_state_array = central_state.to_bytes();
-    let central_state_bytes = central_state_array
-        .iter()
-        .map(|b| LitByte::new(*b, Span::call_site()));
-    let pubkey_bytes = pubkey_bytes
-        .iter()
-        .map(|b| LitByte::new(*b, Span::call_site()));
-    quote!(
-        use solana_program::declare_id;
-        pub mod central_state {
-            use solana_program::pubkey::Pubkey;
-            pub static KEY_BYTES: [u8;32] = [#(#central_state_bytes),*];
-            pub static KEY: Pubkey = Pubkey::new_from_array(KEY_BYTES);
-            pub static NONCE: u8 = #central_state_nonce;
-            pub static SIGNER_SEEDS: [&'static [u8]; 2] = [&super::ID_BYTES, &[NONCE]];
-        }
-        declare_id!(#item_copy);
-        pub static ID_BYTES: [u8;32] = [#(#pubkey_bytes),*];
-    )
-} */
 
 
 #[derive(Accounts)]
@@ -121,7 +91,7 @@ pub struct Web3DeleteAccounts<'info> {
     web3_name_service: UncheckedAccount<'info>,  
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    system_program: Program<'info, System>,
+    //system_program: Program<'info, System>,
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     root_domain_account: UncheckedAccount<'info>,  
@@ -132,10 +102,7 @@ pub struct Web3DeleteAccounts<'info> {
     owner: Signer<'info>, 
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    //reverse_lookup: UncheckedAccount<'info>, 
-
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    refund_targhet: UncheckedAccount<'info>,
+    reverse_lookup: UncheckedAccount<'info>, 
 
     //?
     //record the status of assets resealing
@@ -161,7 +128,7 @@ pub struct Web3DeleteAccounts<'info> {
 /*****************        TEST         ********************/
 #[cfg(test)]
 mod test {
-    use crate::constant::Constants;
+    use crate::constant::Constants::{self, WEB_NAMEING_SERVICE};
     use crate::utils::Utils;
 
     use super::*;
@@ -195,11 +162,17 @@ mod test {
         //Request the public key using a specific method
         let namekey = Utils::get_name_key(None, &name).unwrap();
         let name_account = namekey;
-
-        
+        //temporary
+        let reverse_lookup_id = Utils::get_reverse_key(
+            &program_id, &name_account, central_state::KEY).unwrap();
 
         let  data: Vec<u8> = Vec::new();
         let  lamports = 100;
+
+        //Impersonate the data of the token_source account
+        let usdc_mint = pubkey!("3RjZG5PbE55Y9wzvqXt9GiFFK5oU4WkZ7FPToaHb5zjh");
+        let owner = Pubkey::new_from_array([2u8; 32]); 
+        let amount: u64 = 1000; 
 
         let mut data_mut1 = data.clone();
         let mut data_mut2 = data.clone();
@@ -210,6 +183,11 @@ mod test {
         let mut data_mut7 = data.clone();
         let mut data_mut8 = data.clone();
         let mut data_mut9 = data.clone();
+        data_mut9.extend_from_slice(&usdc_mint.to_bytes());
+        data_mut9.extend_from_slice(&owner.to_bytes());
+        data_mut9.extend_from_slice(&amount.to_be_bytes());
+        let mut data_mut10 = data.clone();
+        let mut data_mut11 = data.clone();
 
         let mut lamports_mut1 = lamports.clone();
         let mut lamports_mut2 = lamports.clone();
@@ -220,6 +198,8 @@ mod test {
         let mut lamports_mut7 = lamports.clone();
         let mut lamports_mut8 = lamports.clone();
         let mut lamports_mut9 = lamports.clone();
+        let mut lamports_mut10 = lamports.clone();
+        let mut lamports_mut11 = lamports.clone();
 
 
         let buyer_accountinfo = generate_account(
@@ -233,7 +213,7 @@ mod test {
         );
         
         let name_account_info = generate_account(
-            &name_account, false, false, &mut lamports_mut4, &mut data_mut4, &system_program::ID, false
+            &name_account, false, false, &mut lamports_mut4, &mut data_mut4, &WEB_NAMEING_SERVICE, false
         );
         
         let vault_account_info = generate_account(
@@ -254,6 +234,14 @@ mod test {
         
         let buyer_token_source_account = generate_account(
             &buyer_token_source, false, false, &mut lamports_mut9, &mut data_mut9, &system_program::ID, false
+        ); 
+
+        let central_state = generate_account(
+            &central_state::KEY, false, false, &mut lamports_mut10, &mut data_mut10, &program_id, false
+        );
+
+        let reverse_lookup = generate_account(
+            &reverse_lookup_id, false, false, &mut lamports_mut11, &mut data_mut11, &Constants::WEB_NAMEING_SERVICE, false
         );
         
         let mut accounts = Web3CreateAccounts {
@@ -268,6 +256,8 @@ mod test {
             fee_payer: Signer::try_from(&fee_payerAccountInfo).unwrap(),
             referrer_opt: None,
             buyer_token_source: UncheckedAccount::try_from(&buyer_token_source_account),
+            central_state: UncheckedAccount::try_from(&central_state),
+            reverse_lookup: UncheckedAccount::try_from(&reverse_lookup),
         };
         
         let ctx = Context::new(&program_id, &mut accounts, &[], Default::default());
@@ -297,6 +287,103 @@ mod test {
             executable,
             Epoch::default(),
         )
+    }
+
+    #[test]
+    pub fn test_delete_domain() {
+        msg!("start delete domain");
+
+
+        let  data: Vec<u8> = Vec::new();
+        let  lamports = 100;
+
+        let mut data_mut1 = data.clone();
+        let mut data_mut2 = data.clone();
+        let mut data_mut3 = data.clone();
+        let mut data_mut4 = data.clone();
+        let mut data_mut5 = data.clone();
+        let mut data_mut6 = data.clone();
+        let mut data_mut7 = data.clone();
+        let mut data_mut9 = data.clone();
+
+        let mut lamports_mut1 = lamports.clone();
+        let mut lamports_mut2 = lamports.clone();
+        let mut lamports_mut3 = lamports.clone();
+        let mut lamports_mut4 = lamports.clone();
+        let mut lamports_mut5 = lamports.clone();
+        let mut lamports_mut6 = lamports.clone();
+        let mut lamports_mut7 = lamports.clone();
+        let mut lamports_mut9 = lamports.clone();
+
+        //confirmed: this is program id
+        let program_id = crate::ID;
+        let root_domain = Pubkey::new_unique();
+
+        //Request the public key using a specific method
+        let name = "f".to_string();
+        let namekey = Utils::get_name_key(Some(root_domain), &name).unwrap();
+        let name_account = namekey;
+        let refund_key = Pubkey::new_unique();
+
+        let delete_owner = Pubkey::new_unique();
+
+        let seeds = name_account.to_bytes();
+        let (state, _) = Pubkey::find_program_address(&[&seeds], &program_id);
+
+        let (reselling_state, _) = Pubkey::find_program_address(&[&seeds, &[1u8, 1u8]], &program_id);
+
+        //temporary
+        let reverse_lookup_id = Utils::get_reverse_key(
+            &program_id, &name_account, central_state::KEY).unwrap();
+
+        let web3_name_service_account = generate_account(
+            &Constants::WEB_NAMEING_SERVICE, false, false, &mut lamports_mut3, &mut data_mut3, &system_program::ID, false
+        );
+        
+        let name_account_info = generate_account(
+            &name_account, false, false, &mut lamports_mut4, &mut data_mut4, &Constants::WEB_NAMEING_SERVICE, false
+        );
+          
+        let state_account_info = generate_account(
+            &state, false, false, &mut lamports_mut6, &mut data_mut6, &system_program::ID, false
+        );
+        
+        let root_domain_account = generate_account(
+            &root_domain, false, false, &mut lamports_mut9, &mut data_mut9, &system_program::ID, false
+        ); 
+
+        let central_state = generate_account(
+            &central_state::KEY, false, false, &mut lamports_mut1, &mut data_mut1, &program_id, false
+        );
+
+        let reverse_lookup = generate_account(
+            &reverse_lookup_id, false, false, &mut lamports_mut2, &mut data_mut2, &Constants::WEB_NAMEING_SERVICE, false
+        );
+
+        let owner_info = generate_account(
+            &delete_owner, true, false, &mut lamports_mut5, &mut data_mut5, &system_program::ID, false
+        );
+
+        let reseal_account = generate_account(
+            &reselling_state, false, false, &mut lamports_mut7, &mut data_mut7, &system_program::ID, false
+        );
+
+        let mut delet_account = Web3DeleteAccounts{
+            web3_name_service: UncheckedAccount::try_from(&web3_name_service_account),
+            root_domain_account: UncheckedAccount::try_from(&root_domain_account),
+            name_account: UncheckedAccount::try_from(&name_account_info),
+            central_state: UncheckedAccount::try_from(&central_state),
+            reverse_lookup: UncheckedAccount::try_from(&reverse_lookup),
+            auction_state: UncheckedAccount::try_from(&state_account_info),
+            owner: Signer::try_from(&owner_info).unwrap(),
+            resealing_state :UncheckedAccount::try_from(&reseal_account),
+        };
+
+        msg!("create delete test accounts over");
+        let ctx = Context::new(&program_id, &mut delet_account, &[], Default::default());
+
+        delete_domain(ctx,refund_key);
+
     }
 
     

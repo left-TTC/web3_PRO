@@ -12,7 +12,7 @@ pub mod Cpi{
     pub fn create_name_account(
         ctx: &Context<Web3CreateAccounts>,
         hashed_name: Vec<u8>,
-        //signer_seeds: &[&[u8]],
+        signer_seeds: &[&[u8]],
     ) -> ProgramResult {
         //CPI call the web3 name service program
 

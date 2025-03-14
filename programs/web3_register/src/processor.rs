@@ -17,9 +17,12 @@ pub fn create_domain(
 }
 
 
-pub fn delete_domain(ctx: Context<Web3DeleteAccounts>) -> ProgramResult {
+pub fn delete_domain(
+    ctx: Context<Web3DeleteAccounts>,
+    refund_target: Pubkey
+    ) -> ProgramResult {
     #[cfg(feature = "Debug")]
     msg!("delete instruction");
-    delete_process(ctx)
+    delete_process(ctx, refund_target)
 }
 

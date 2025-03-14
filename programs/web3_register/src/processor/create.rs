@@ -1,4 +1,4 @@
-use crate::constant::Constants;
+use crate::{central_state, constant::Constants};
 use crate::Web3CreateAccounts;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
@@ -14,7 +14,7 @@ pub fn create_process(
     name: String,
     ipfs: Option<Vec<u8>>
 ) -> ProgramResult{
-    Utils::create_create_check(&ctx)?;
+    Utils::create_check(&ctx)?;
     //make sure is's only lowecase
     #[cfg(feature = "Debug")]
     msg!("now we check domain/root: {}",name);
@@ -63,24 +63,25 @@ pub fn create_process(
         msg!("The name auctioning state account is not empty.");
         return Err(ProgramError::InvalidArgument);
     }
-    msg!("auction data ok");
-    msg!("");
-
-    let hashed_reverse_lookup = Utils::get_hashed_name(&name_account_key.to_string());
-
-    //get reverse lookup account's PDA with central state key
-    //what is central state key?
 
     //compare reverse lookup key
+    let reverse_lookup_key = Utils::get_reverse_key(
+        ctx.program_id, ctx.accounts.name_account.key, central_state::KEY)?;
+    if &reverse_lookup_key != ctx.accounts.reverse_lookup.key {
+        msg!("Provided wrong reverse lookup account");
+        return Err(ProgramError::InvalidArgument);
+    }
 
-    //calculate the price
-    let mut domain_token_price = Utils::get_domian_price_checked(&ctx, &name)?;
-    //get mint 
-    let token_acc = 
-        Utils::get_spl_Account_mint(&ctx.accounts.buyer_token_source.data.borrow())?;
-    //discount? if user use designated mint
+    //we will use it at cpi process
+    let central_state_signer_seeds: &[&[u8]] = &[&ctx.program_id.to_bytes(), &[central_state::NONCE]];
+
+    //calculate the price and return the token type
+    let (mut domain_token_price, token_acc) = Utils::get_domian_price_checked(
+        &ctx.accounts.buyer_token_source, &name)?;
+    msg!("domain_price: {}", domain_token_price);
     
     //referrer policy
+    #[cfg(feature = "devnet")]
     let referrer_fee = 
         if let Some(referrer_account) = &ctx.accounts.referrer_opt {
             //referrer's account should be owned by spl token;
@@ -131,6 +132,29 @@ pub fn create_process(
     };
 
     //transfer amount to vault
+    #[cfg(feature = "devnet")]
+    transfer_to_vault(ctx)?;
+
+    msg!("transfer OK");
+
+    //create domain name -- CPI call -> web3 naming service
+    //fristly: get the rent info form solana
+    let rent = Rent::get();
+    let hashed_name = Utils::get_hashed_name(&name);
+
+    msg!("send create instruction to web3 name service");
+    Cpi::create_name_account(
+        &ctx, hashed_name, central_state_signer_seeds )?;
+
+    //cpi call --> create reverse_look_up account
+    msg!("send create_reverse instruction to web3 name service");
+    Cpi::create_reverse_lookup_account(&ctx)?;
+
+    msg!("create domain over");
+    Ok(())
+}
+
+fn transfer_to_vault (ctx: Context<Web3CreateAccounts>, domain_token_price: u64) -> ProgramResult {
     let vault_transfer_info = Transfer {
         from: ctx.accounts.buyer_token_source.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
@@ -141,21 +165,10 @@ pub fn create_process(
 
     let vault_transfer_ctx = CpiContext::new(cpi_program, vault_transfer_info);
 
-    let valut_transfer_ix = transfer(
+    transfer(
         vault_transfer_ctx,
         domain_token_price,
-    );
-
-    //create domain name -- CPI call -> web3 naming service
-    //fristly: get the rent info form solana
-    let rent = Rent::get();
-    let hashed_name = Utils::get_hashed_name(&name);
-    Cpi::create_name_account(&ctx, hashed_name/*, signer_seeds */)?;
-
-    //cpi call --> create reverse_look_up account
-
-    Cpi::create_reverse_lookup_account(&ctx)?;
-
+    )?;
 
     Ok(())
 }

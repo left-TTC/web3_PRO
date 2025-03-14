@@ -14,6 +14,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 pub mod Utils{
 
+    use crate::{central_state, constant::Constants::WEB_NAMEING_SERVICE};
+
     use super::*;
     
     //check account keys
@@ -46,7 +48,7 @@ pub mod Utils{
     }
 
     //external interface
-    pub fn create_create_check(ctx: &Context<Web3CreateAccounts>) -> ProgramResult{
+    pub fn create_check(ctx: &Context<Web3CreateAccounts>) -> ProgramResult{
         //Check the incoming domain name service contract
         check_account_key (ctx.accounts.web3_name_service.key, &Constants::WEB_NAMEING_SERVICE)?;
         //
@@ -56,7 +58,7 @@ pub mod Utils{
         //
         //check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
         //check central_state account
-        //check_account_key(&ctx.accounts.central_state, &central_state::key)?;
+        check_account_key(ctx.accounts.central_state.key, &central_state::KEY)?;
         //
         check_account_key(ctx.accounts.spl_token_program.key, &token::ID)?;
         //
@@ -64,7 +66,7 @@ pub mod Utils{
         
         //The owner of the name account must be a system program
         //the domain owner will be recorded in account's data
-        check_account_owner(&ctx.accounts.name_account, &system_program::ID)?;
+        check_account_owner(&ctx.accounts.name_account, &WEB_NAMEING_SERVICE)?;
         //the vault account should be owned by the SPL token 
         check_account_owner(&ctx.accounts.vault, &token::ID)?;
         //state is auction account
@@ -78,15 +80,19 @@ pub mod Utils{
 
     pub fn check_delete_key (ctx: &Context<Web3DeleteAccounts>) -> ProgramResult {
         check_account_key(ctx.accounts.web3_name_service.key, &Constants::WEB_NAMEING_SERVICE)?;
-        check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
+        msg!("name service ok");
+        //check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
         //central_state
-
+        check_account_key(ctx.accounts.central_state.key, &central_state::KEY)?;
+        msg!("central state ok");
 
         //check the account owner: web3 naming service or current program
         check_account_owner(&ctx.accounts.name_account, &Constants::WEB_NAMEING_SERVICE)
             .or_else(|_| check_account_owner(&ctx.accounts.name_account, &ctx.program_id))?;
-        // check_account_owner(&ctx.accounts.reverse_lookup, &Constants::WEB_NAMEING_SERVICE)
-        //     .or_else(|_| check_account_owner(&ctx.accounts.reverse_lookup, &ctx.program_id))?;
+        msg!("nameaccount ok");
+        check_account_owner(&ctx.accounts.reverse_lookup, &Constants::WEB_NAMEING_SERVICE)
+             .or_else(|_| check_account_owner(&ctx.accounts.reverse_lookup, &ctx.program_id))?;
+        msg!("reverse account owner ok");
         //check the resealing account
         check_account_owner(&ctx.accounts.resealing_state, &system_program::ID)
             .or_else(|_| check_account_owner(&ctx.accounts.resealing_state, &*ctx.program_id))?;
@@ -146,27 +152,26 @@ pub mod Utils{
     }
 
     //calculate the reverse account's PDA
-    pub fn get_reverse_key (ctx: &Context<Web3DeleteAccounts>) -> Result<Pubkey> {
+    pub fn get_reverse_key (id: &Pubkey, key: &Pubkey, root: Pubkey) -> Result<Pubkey> {
         //seeds composition: domain account's pubkey
-        let hased_reverse_look_up = get_hashed_name(&ctx.accounts.name_account.key.to_string());
+        let hased_reverse_look_up = get_hashed_name(&key.to_string());
         let (reverse_lookup_key, _) = get_seeds_and_key(
-            ctx.program_id,
+            id,
             hased_reverse_look_up,
-            &Some(*ctx.accounts.root_domain_account.key));
-
+            &Some(root),
+        );
         Ok(reverse_lookup_key)
     }
-
-
-
-
-
 
     //Correctly counting the number of "graphemes" in a string
     fn get_grapheme_len(name: &str) -> usize {
         name.graphemes(true).count()
     }
 
+    //convert to the usd price 
+    //example: f.sol => 750 usd
+    //         fm.sol => 700 usd
+    //         fmc.sol => 640 usd
     fn get_usd_price (len: usize) -> u64 {
         let multiplier = match len {
             1 => 750,
@@ -181,8 +186,11 @@ pub mod Utils{
         return multiplier * 1_000;
     }
 
-    pub fn get_domian_price_checked (ctx: &Context<Web3CreateAccounts>, name: &String) -> Result<u64>{
+    pub fn get_domian_price_checked (
+        buyer_token_account: &AccountInfo, 
+        name: &String) -> Result<(u64, Pubkey)>{
         let usd_price = get_usd_price(get_grapheme_len(name));
+        msg!("checking '{}''s price: {}", name, usd_price);
         //get buyer's token type
         //this is a kind of account that created by 
         /*pub struct Account {
@@ -196,16 +204,18 @@ pub mod Utils{
         } */
        //get the mint
         let buyer_token_mint = 
-            get_spl_Account_mint(&ctx.accounts.buyer_token_source.data.borrow())?;
+            get_spl_Account_mint(&buyer_token_account.data.borrow())?;
         
         //connet pyth and get the value
 
         let test_value: u64 = 7;
-        Ok(test_value)
+        
+        Ok((test_value, buyer_token_mint))
     }
 
-    pub fn get_spl_Account_mint (spl_account_data: &[u8]) -> Result<Pubkey>{
+    fn get_spl_Account_mint (spl_account_data: &[u8]) -> Result<Pubkey>{
         if spl_account_data.len() < 32 {
+            msg!("length err");
             return Err(ProgramError::InvalidAccountData.into());
         }
 
