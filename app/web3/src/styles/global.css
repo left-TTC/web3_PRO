@@ -1,0 +1,26 @@
+
+  /* waht defined here is the main color */
+:root {
+    --primary-color: #230343;
+    --background-color: #230343;
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    /* Make sure the element's width and height 
+    include padding and borders to prevent the 
+    element from getting bigger when padding is added.*/
+    box-sizing: border-box;
+  }
+  
+  /* global font and backgroudcolor*/
+  body {
+    font-family: Arial, sans-serif;
+    background-color: var(--background-color);
+    height: 120vh;
+  }
+
+
+
+  
