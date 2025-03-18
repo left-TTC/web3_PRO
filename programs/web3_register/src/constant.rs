@@ -21,9 +21,17 @@ pub mod Constants{
 pub mod Constants{
     use super::*;
     //all not ready
-    pub const VAULT_ACCOUNT: Pubkey = pubkey!("GcWEQ9K78FV7LEHteFVciYApERk5YvQuFDQPk1yYJVXi");
+    //use my account as the test wallet
+    pub const VAULT_ACCOUNT: Pubkey = pubkey!("BHDoJEpVvJgXdTEutoxQT2BR7aVRGtmxJG49ov3eDdET");
 
+    //this should be create at name
     pub const ROOT_DOMAIN_ACCOUNT: Pubkey = pubkey!("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
 
     pub const AUCTION_PROGRAM_ID: Pubkey = pubkey!("AVWV7vdWbLqXiLKFaP19GhYurhwxaLp2qRBSjT5tR5vT");
+    //change it to web3 name service
+    pub const WEB_NAMEING_SERVICE: Pubkey = pubkey!("namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
+
+    pub const HASH_PREFIX: &str = "WEB3 Name Service";
+
+    pub const REFERRER_FEE_PCT: u64 = 5;
 }

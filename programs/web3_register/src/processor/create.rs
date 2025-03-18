@@ -133,7 +133,7 @@ pub fn create_process(
 
     //transfer amount to vault
     #[cfg(feature = "devnet")]
-    transfer_to_vault(ctx)?;
+    transfer_to_vault(&ctx, domain_token_price)?;
 
     msg!("transfer OK");
 
@@ -154,7 +154,7 @@ pub fn create_process(
     Ok(())
 }
 
-fn transfer_to_vault (ctx: Context<Web3CreateAccounts>, domain_token_price: u64) -> ProgramResult {
+fn transfer_to_vault (ctx: &Context<Web3CreateAccounts>, domain_token_price: u64) -> ProgramResult {
     let vault_transfer_info = Transfer {
         from: ctx.accounts.buyer_token_source.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
