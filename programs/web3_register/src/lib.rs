@@ -20,10 +20,9 @@ pub mod web3Regitser {
 
     pub fn create_domain(
         ctx: Context<Web3CreateAccounts>,
-        name: String,
-        ipfs: Option<Vec<u8>>,
+        data: storageData,
         ) -> ProgramResult {
-        processor::create_domain(ctx, name, ipfs)
+        processor::create_domain(ctx, data)
     }
     
     pub fn delete_domain(
@@ -44,11 +43,13 @@ pub struct Web3CreateAccounts<'info> {
     // web3 name service Program ID
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     web3_name_service: UncheckedAccount<'info>,  
+    
     // root domain(Y--common domain  N--root domain)
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    root_domain_account: Option<Signer<'info>>,
+    root_domain_account: Option<UncheckedAccount<'info>>,
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    #[account(mut)]
     name_account: UncheckedAccount<'info>,
     //solana program result
     //system_program: Program<'info, System>,  
@@ -57,12 +58,19 @@ pub struct Web3CreateAccounts<'info> {
     vault: UncheckedAccount<'info>,  
 
     buyer: Signer<'info>,  
+
     //auction account
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     state: UncheckedAccount<'info>, 
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    reverse_lookup: UncheckedAccount<'info>,  
+    // it's Unnecessary
+    //reverse_lookup: UncheckedAccount<'info>,  
+
+    // we will use this to record the domains which a accounts have
+    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    #[account(mut)]
+    domain_record: UncheckedAccount<'info>,
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     central_state: UncheckedAccount<'info>,  
@@ -83,7 +91,14 @@ pub struct Web3CreateAccounts<'info> {
     referrer_opt: Option<UncheckedAccount<'info>>,
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    class: UncheckedAccount<'info>,
+    class: Signer<'info>,
+}
+
+#[account]
+pub struct storageData{
+    name: String,
+    owner: Pubkey,
+    ipfs: Option<Vec<u8>>
 }
 
 
@@ -126,63 +141,6 @@ pub struct Web3DeleteAccounts<'info> {
 }
 
 
-
-//unit test
-/*****************        TEST         ********************/
-#[cfg(test)]
-mod test {
-    use crate::constant::Constants::{self, WEB_NAMEING_SERVICE};
-    use crate::utils::Utils;
-
-    use super::*;
-    use anchor_lang::prelude::*;
-    use anchor_lang::solana_program::pubkey::Pubkey;
-    use anchor_lang::solana_program::{lamports, system_program};
-    use anchor_spl::token;
-    use anchor_lang::solana_program::epoch_schedule::Epoch;
-    use anchor_lang::solana_program::sysvar;
-
-    #[test]
-    fn test_statement() {
-        msg!("this is the unit test in the lib.rs");
-        msg!("I'd like to test all my function here");
-        let id = crate::ID;
-        msg!("now programID: {}", id);
-    }
-
-    #[test]
-    fn test_create_domain() {
-        
-    }
-
-    fn generate_account<'a>(
-        pubkey: &'a Pubkey, 
-        signer: bool,
-        write: bool,
-        lamports: &'a mut u64,
-        data: &'a mut [u8],
-        owner: &'a Pubkey,
-        executable: bool,
-    ) -> AccountInfo<'a> {
-        AccountInfo::new(
-            pubkey,
-            signer,
-            write,
-            lamports,
-            data,
-            owner,
-            executable,
-            Epoch::default(),
-        )
-    }
-
-    #[test]
-    pub fn test_delete_domain() {
-        
-    }
-
-    
-}
 
 
 

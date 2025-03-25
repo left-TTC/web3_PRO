@@ -29,7 +29,7 @@ pub mod Constants{
 
     pub const AUCTION_PROGRAM_ID: Pubkey = pubkey!("AVWV7vdWbLqXiLKFaP19GhYurhwxaLp2qRBSjT5tR5vT");
     //change it to web3 name service
-    pub const WEB_NAMEING_SERVICE: Pubkey = pubkey!("namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
+    pub const WEB_NAMEING_SERVICE: Pubkey = pubkey!("BWK7ZQWjQ9fweneHfsYmof7znPr5GyedCWs2J8JhHxD3");
 
     pub const HASH_PREFIX: &str = "WEB3 Name Service";
 

@@ -122,13 +122,19 @@ pub mod Utils{
     pub fn get_seeds_and_key(
         program_id: &Pubkey,
         hashed_name: Vec<u8>,
-        root_opt: &Option<Pubkey>,
-    ) -> (Pubkey, Vec<u8>) {
-        //hashed name as the init seeds
+        class: &Pubkey,
+        root_opt: Option<&Pubkey>,
+    ) -> (Pubkey, Vec<u8>) {        
         let mut seeds_vec: Vec<u8> = hashed_name;
+
+        //push class account
+        for b in class.to_bytes() {
+            seeds_vec.push(b);
+        }
+
         //root domain(when create a root domian,use default)
-        let root_domian = root_opt.clone().unwrap_or_default();
-        //add root to the sed
+        let root_domian = root_opt.cloned().unwrap_or_default();
+        //add root to the seed
         for b in root_domian.to_bytes() {
             seeds_vec.push(b);
         }
@@ -141,27 +147,34 @@ pub mod Utils{
     }
 
     //calculate the domain's PDA
-    pub fn get_name_key (root_opt: Option<Pubkey>, name: &String) -> Result<Pubkey> {
-        let hashed_name = get_hashed_name(name);
+    pub fn get_PDA_key (root_opt: Option<&Pubkey>, value: &String, class: &Pubkey) -> Result<Pubkey> {
+        let hashed_name = get_hashed_name(value);
         let (name_account_key, _) = get_seeds_and_key(
             &Constants::WEB_NAMEING_SERVICE,
             hashed_name,
-            &root_opt,
+            class,
+            root_opt,
         );
         Ok(name_account_key)
     }
 
-    //calculate the reverse account's PDA
-    pub fn get_reverse_key (id: &Pubkey, key: &Pubkey, root: Pubkey) -> Result<Pubkey> {
-        //seeds composition: domain account's pubkey
-        let hased_reverse_look_up = get_hashed_name(&key.to_string());
-        let (reverse_lookup_key, _) = get_seeds_and_key(
-            id,
-            hased_reverse_look_up,
-            &Some(root),
-        );
-        Ok(reverse_lookup_key)
-    }
+
+    // //calculate the reverse account's PDA
+    // pub fn get_reverse_key (id: &Pubkey, key: &Pubkey, root: Pubkey) -> Result<Pubkey> {
+    //     //seeds composition: domain account's pubkey
+    //     let hased_reverse_look_up = get_hashed_name(&key.to_string());
+    //     let (reverse_lookup_key, _) = get_seeds_and_key(
+    //         id,
+    //         hased_reverse_look_up,
+    //         &Some(root),
+    //     );
+    //     Ok(reverse_lookup_key)
+    // }
+
+
+
+
+
 
     //Correctly counting the number of "graphemes" in a string
     fn get_grapheme_len(name: &str) -> usize {

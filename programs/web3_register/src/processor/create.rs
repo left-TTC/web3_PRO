@@ -1,5 +1,5 @@
 use crate::{central_state, constant::Constants};
-use crate::Web3CreateAccounts;
+use crate::{storageData, Web3CreateAccounts};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 use crate::utils::Utils;
@@ -11,23 +11,22 @@ use crate::cpi::Cpi;
 
 pub fn create_process(
     ctx: Context<Web3CreateAccounts>,
-    name: String,
-    ipfs: Option<Vec<u8>>
+    create_data: storageData,
 ) -> ProgramResult{
     Utils::create_check(&ctx)?;
     //make sure is's only lowecase
     #[cfg(feature = "Debug")]
-    msg!("now we check domain/root: {}",name);
+    msg!("now we check domain/root: {}",create_data.name);
     
-    if name != 
-        name.trim().to_lowercase() {
+    if create_data.name != 
+        create_data.name.trim().to_lowercase() {
         #[cfg(feature = "Debug")]
         msg!("Domain names must be lower case and have no space");
         return Err(ProgramError::InvalidArgument);
     }
 
     //without "."
-    if name.contains(".") {
+    if create_data.name.contains(".") {
         #[cfg(feature = "Debug")]
         msg!("format err");
         return Err(ProgramError::InvalidArgument);
@@ -35,11 +34,18 @@ pub fn create_process(
 
     //get the root domain key
     let root_domain_account_key = if let Some(value) = &ctx.accounts.root_domain_account {
-        Some(*value.key)
+        if value.key == ctx.accounts.name_account.key {
+            None
+        }else{
+            msg!("root");
+            Some(value.key)
+        }
     }else{
         None
     };
-    let name_account_key = Utils::get_name_key(root_domain_account_key, &name)?;
+
+    let name_account_key = Utils::get_PDA_key(
+        root_domain_account_key, &create_data.name, ctx.accounts.class.key)?;
     
     if &name_account_key != ctx.accounts.name_account.key {
         #[cfg(feature = "Debug")]   
@@ -47,28 +53,31 @@ pub fn create_process(
         return Err(ProgramError::InvalidArgument);
     }
 
-
     //find auction account on solana
-    let (auction_state_key, _) = 
-        Pubkey::find_program_address(&[&name_account_key.to_bytes()], ctx.program_id);
-    if &auction_state_key != ctx.accounts.state.key {
-        #[cfg(feature = "Debug")]
-        msg!("An invalid name auctioning state account was provided");
-        msg!("we don't test it now");
-        //return Err(ProgramError::InvalidArgument);
-    }
+    // let (auction_state_key, _) = 
+    //     Pubkey::find_program_address(&[&name_account_key.to_bytes()], ctx.program_id);
+    // if &auction_state_key != ctx.accounts.state.key {
+    //     #[cfg(feature = "Debug")]
+    //     msg!("An invalid name auctioning state account was provided");
+    //     msg!("we don't test it now");
+    //     //return Err(ProgramError::InvalidArgument);
+    // }
 
-    if !ctx.accounts.state.data_is_empty() {
-        #[cfg(feature = "Debug")]
-        msg!("The name auctioning state account is not empty.");
-        return Err(ProgramError::InvalidArgument);
-    }
+    // if !ctx.accounts.state.data_is_empty() {
+    //     #[cfg(feature = "Debug")]
+    //     msg!("The name auctioning state account is not empty.");
+    //     return Err(ProgramError::InvalidArgument);
+    // }
 
     //compare reverse lookup key
-    let reverse_lookup_key = Utils::get_reverse_key(
-        ctx.program_id, ctx.accounts.name_account.key, central_state::KEY)?;
-    if &reverse_lookup_key != ctx.accounts.reverse_lookup.key {
-        msg!("Provided wrong reverse lookup account");
+    //root domain does't need record
+    let owner_recor_key = Utils::get_PDA_key(
+        root_domain_account_key,
+        &create_data.owner.to_string(),
+        ctx.accounts.class.key,
+        )?;
+    if &owner_recor_key != ctx.accounts.domain_record.key {
+        msg!("Provided wrong owner record account");
         return Err(ProgramError::InvalidArgument);
     }
 
@@ -77,7 +86,7 @@ pub fn create_process(
 
     //calculate the price and return the token type
     let (mut domain_token_price, token_acc) = Utils::get_domian_price_checked(
-        &ctx.accounts.buyer_token_source, &name)?;
+        &ctx.accounts.buyer_token_source, &create_data.name)?;
     msg!("domain_price: {}", domain_token_price);
     
     //referrer policy
@@ -140,15 +149,25 @@ pub fn create_process(
     //create domain name -- CPI call -> web3 naming service
     //fristly: get the rent info form solana
     let rent = Rent::get();
-    let hashed_name = Utils::get_hashed_name(&name);
+    let hashed_name = Utils::get_hashed_name(&create_data.name);
 
     msg!("send create instruction to web3 name service");
     Cpi::create_name_account(
-        &ctx, hashed_name, central_state_signer_seeds )?;
+        &ctx, 
+        hashed_name, 
+        central_state_signer_seeds, 
+        create_data.clone())?;
 
     //cpi call --> create reverse_look_up account
-    msg!("send create_reverse instruction to web3 name service");
-    Cpi::create_reverse_lookup_account(&ctx)?;
+    msg!("send domain_record instruction to web3 name service");
+    if ctx.accounts.domain_record.data.borrow().len() == 0 {
+        msg!("this is a new user");
+        Cpi::deal_record_account(
+            &ctx, 
+            create_data.owner, 
+            create_data.name.clone(), 
+            central_state_signer_seeds)?;
+    }
 
     msg!("create domain over");
     Ok(())

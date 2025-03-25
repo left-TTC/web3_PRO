@@ -2540,6 +2540,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "web3nameservice"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "borsh 1.5.5",
+]
+
+[[package]]
 name = "web3register"
 version = "0.1.0"
 dependencies = [
@@ -2550,6 +2558,7 @@ dependencies = [
  "num-traits",
  "thiserror 2.0.12",
  "unicode-segmentation",
+ "web3nameservice",
 ]
 
 [[package]]
