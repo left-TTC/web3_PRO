@@ -1,16 +1,22 @@
-use anchor_lang::{ prelude::*};
+use anchor_lang::prelude::*;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
-use left_utils::declare_central_state;
+use anchor_lang::solana_program::system_program;
+use anchor_spl::token;
+use constant::Constants;
+use web3nameservice::program::Web3NameService;
 
 
-declare_id!("Dbpxr1SxxmjpLBRAxwPqQ8JBZeRUU2LCyrThpLdnBTRY");
-declare_central_state!("Dbpxr1SxxmjpLBRAxwPqQ8JBZeRUU2LCyrThpLdnBTRY");
+
+
+declare_id!("7MReDm6FiS3n4A1sxTxdHu8p92TQutQSws715azLqtYj");
+
+
+
 
 pub mod processor;
 pub mod constant;
 pub mod cpi;
 pub mod utils;
-pub mod error;
 
 #[program]
 pub mod web3Regitser {
@@ -41,57 +47,79 @@ pub mod web3Regitser {
 #[derive(Accounts)]
 pub struct Web3CreateAccounts<'info> {
     // web3 name service Program ID
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    web3_name_service: UncheckedAccount<'info>,  
+    #[account(address = Constants::WEB_NAMEING_SERVICE)]
+    web3_name_service: Program<'info, Web3NameService>,  
     
     // root domain(Y--common domain  N--root domain)
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    /// CHECK: This account is verified in the instruction logic to ensure its safety
+    #[account(owner = system_program::ID)]
     root_domain_account: Option<UncheckedAccount<'info>>,
 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    // cpi: so we choose UncheckedAccount
+    /// CHECK: This account is verified in the instruction logic to ensure its safety
     #[account(mut)]
     name_account: UncheckedAccount<'info>,
-    //solana program result
-    //system_program: Program<'info, System>,  
-    //the vault 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    vault: UncheckedAccount<'info>,  
 
+    //solana program result
+    /// CHECK: This account is verified in the instruction logic to ensure its safety
+    system_program: Program<'info, System>, 
+
+    //the vault 
+    // #[account(address = hard_coded)]
+    // vault: UncheckedAccount<'info>,  
+
+    /// CHECK: This account is verified in the instruction logic to ensure its safety
+    #[account(mut)]
     buyer: Signer<'info>,  
 
     //auction account
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    state: UncheckedAccount<'info>, 
-
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    // it's Unnecessary
-    //reverse_lookup: UncheckedAccount<'info>,  
+    //state: UncheckedAccount<'info>, 
+ 
 
     // we will use this to record the domains which a accounts have
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
+    /// CHECK: This account is verified in the instruction logic to ensure its safety
     #[account(mut)]
     domain_record: UncheckedAccount<'info>,
 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    central_state: UncheckedAccount<'info>,  
+    #[account(
+        init_if_needed,
+        payer = fee_payer,
+        space = 8 + 1 + 8,
+        seeds = [b"central_state"],
+        bump,
+    )]
+    pub central_state: Account<'info, central_state>,
+
 
     //Providing token services
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    spl_token_program: UncheckedAccount<'info>,
+    // #[account(address = &token::ID)]
+    // spl_token_program: UncheckedAccount<'info>,
 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    rent_sysvar: UncheckedAccount<'info>,
 
+    //rent_sysvar: UncheckedAccount<'info>,
+
+    #[account(mut)]
     fee_payer: Signer<'info>,
     //user's token account
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    buyer_token_source: UncheckedAccount<'info>,
 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    referrer_opt: Option<UncheckedAccount<'info>>,
+    //buyer_token_source: UncheckedAccount<'info>,
 
-    /// CHECK: This account is verified in the instruction logic to ensure its safety.
-    class: Signer<'info>,
+
+    //referrer_opt: Option<UncheckedAccount<'info>>,
+
+}
+
+#[account]
+pub struct check_owner_account{
+   //use to check on-chain account
+   
+}
+
+#[account]
+pub struct central_state{
+    pub total_domain: u64,
+    pub is_init: bool,
 }
 
 #[account]
@@ -100,8 +128,6 @@ pub struct storageData{
     owner: Pubkey,
     ipfs: Option<Vec<u8>>
 }
-
-
 
 #[derive(Accounts)]
 pub struct Web3DeleteAccounts<'info> {
@@ -113,6 +139,7 @@ pub struct Web3DeleteAccounts<'info> {
 
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     root_domain_account: UncheckedAccount<'info>,  
+
     //domain account
     /// CHECK: This account is verified in the instruction logic to ensure its safety.
     name_account: UncheckedAccount<'info>,

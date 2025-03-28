@@ -204,7 +204,7 @@ dependencies = [
  "bytemuck",
  "getrandom 0.2.15",
  "solana-program",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -263,7 +263,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "syn 1.0.109",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -1173,18 +1173,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
-name = "left_utils"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9c82876b295bd6b056bdda8a2870d0cf6620480e37853833dcd41599c755665"
-dependencies = [
- "anchor-lang",
- "proc-macro2",
- "quote",
- "syn 2.0.100",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.171"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1247,7 +1235,7 @@ dependencies = [
  "ark-bn254",
  "ark-ff",
  "num-bigint",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -1855,7 +1843,7 @@ dependencies = [
  "sha2 0.10.8",
  "solana-frozen-abi-macro",
  "subtle",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -1930,7 +1918,7 @@ dependencies = [
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
  "solana-sdk-macro",
- "thiserror 1.0.69",
+ "thiserror",
  "tiny-bip39",
  "wasm-bindgen",
  "zeroize",
@@ -1986,7 +1974,7 @@ dependencies = [
  "solana-logger",
  "solana-program",
  "solana-sdk-macro",
- "thiserror 1.0.69",
+ "thiserror",
  "uriparse",
  "wasm-bindgen",
 ]
@@ -2035,7 +2023,7 @@ dependencies = [
  "solana-program",
  "solana-sdk",
  "subtle",
- "thiserror 1.0.69",
+ "thiserror",
  "zeroize",
 ]
 
@@ -2052,7 +2040,7 @@ dependencies = [
  "solana-program",
  "spl-token",
  "spl-token-2022",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -2087,7 +2075,7 @@ dependencies = [
  "quote",
  "sha2 0.10.8",
  "syn 2.0.100",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -2122,7 +2110,7 @@ dependencies = [
  "num-traits",
  "solana-program",
  "spl-program-error-derive",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -2163,7 +2151,7 @@ dependencies = [
  "num-traits",
  "num_enum",
  "solana-program",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -2187,7 +2175,7 @@ dependencies = [
  "spl-token-metadata-interface",
  "spl-transfer-hook-interface",
  "spl-type-length-value",
- "thiserror 1.0.69",
+ "thiserror",
 ]
 
 [[package]]
@@ -2295,16 +2283,7 @@ version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
 dependencies = [
- "thiserror-impl 1.0.69",
-]
-
-[[package]]
-name = "thiserror"
-version = "2.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
-dependencies = [
- "thiserror-impl 2.0.12",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -2312,17 +2291,6 @@ name = "thiserror-impl"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.100",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2342,7 +2310,7 @@ dependencies = [
  "rand 0.7.3",
  "rustc-hash",
  "sha2 0.9.9",
- "thiserror 1.0.69",
+ "thiserror",
  "unicode-normalization",
  "wasm-bindgen",
  "zeroize",
@@ -2553,10 +2521,9 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "left_utils",
+ "lazy_static",
  "num-derive",
  "num-traits",
- "thiserror 2.0.12",
  "unicode-segmentation",
  "web3nameservice",
 ]

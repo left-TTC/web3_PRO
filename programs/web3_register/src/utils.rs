@@ -14,7 +14,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 pub mod Utils{
 
-    use crate::{central_state, constant::Constants::WEB_NAMEING_SERVICE};
+    use crate::{ constant::Constants::WEB_NAMEING_SERVICE};
 
     use super::*;
     
@@ -49,32 +49,20 @@ pub mod Utils{
 
     //external interface
     pub fn create_check(ctx: &Context<Web3CreateAccounts>) -> ProgramResult{
-        //Check the incoming domain name service contract
-        check_account_key (ctx.accounts.web3_name_service.key, &Constants::WEB_NAMEING_SERVICE)?;
+        msg!("account check");
+
+
+        //check_account_key(ctx.accounts.spl_token_program.key, &token::ID)?;
         //
-        if let Some(root) = &ctx.accounts.root_domain_account{
-            check_account_key(root.key, &Constants::ROOT_DOMAIN_ACCOUNT)?;
-        }
-        //
-        //check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
-        //check central_state account
-        check_account_key(ctx.accounts.central_state.key, &central_state::KEY)?;
-        //
-        check_account_key(ctx.accounts.spl_token_program.key, &token::ID)?;
-        //
-        check_account_key(ctx.accounts.rent_sysvar.key, &sysvar::ID)?;
+        //check_account_key(ctx.accounts.rent_sysvar.key, &sysvar::ID)?;
         
-        //The owner of the name account must be a system program
-        //the domain owner will be recorded in account's data
-        check_account_owner(&ctx.accounts.name_account, &WEB_NAMEING_SERVICE)?;
         //the vault account should be owned by the SPL token 
-        check_account_owner(&ctx.accounts.vault, &token::ID)?;
+        // check_account_owner(&ctx.accounts.vault, &token::ID)?;
         //state is auction account
-        check_account_owner(&ctx.accounts.state, &system_program::ID)?;
+        //check_account_owner(&ctx.accounts.state, &system_program::ID)?;
 
-        check_signer( &ctx.accounts.buyer)?;
-        check_signer(&ctx.accounts.fee_payer)?;
 
+        msg!("account check ok");
         Ok(())
     }
 
@@ -83,7 +71,7 @@ pub mod Utils{
         msg!("name service ok");
         //check_account_key(ctx.accounts.system_program.key, &system_program::ID)?;
         //central_state
-        check_account_key(ctx.accounts.central_state.key, &central_state::KEY)?;
+        //check_account_key(ctx.accounts.central_state.key, &central_state::KEY)?;
         msg!("central state ok");
 
         //check the account owner: web3 naming service or current program
@@ -122,15 +110,9 @@ pub mod Utils{
     pub fn get_seeds_and_key(
         program_id: &Pubkey,
         hashed_name: Vec<u8>,
-        class: &Pubkey,
         root_opt: Option<&Pubkey>,
     ) -> (Pubkey, Vec<u8>) {        
         let mut seeds_vec: Vec<u8> = hashed_name;
-
-        //push class account
-        for b in class.to_bytes() {
-            seeds_vec.push(b);
-        }
 
         //root domain(when create a root domian,use default)
         let root_domian = root_opt.cloned().unwrap_or_default();
@@ -147,29 +129,16 @@ pub mod Utils{
     }
 
     //calculate the domain's PDA
-    pub fn get_PDA_key (root_opt: Option<&Pubkey>, value: &String, class: &Pubkey) -> Result<Pubkey> {
+    pub fn get_PDA_key (root_opt: Option<&Pubkey>, value: &String) -> Result<Pubkey> {
         let hashed_name = get_hashed_name(value);
         let (name_account_key, _) = get_seeds_and_key(
             &Constants::WEB_NAMEING_SERVICE,
             hashed_name,
-            class,
             root_opt,
         );
         Ok(name_account_key)
     }
 
-
-    // //calculate the reverse account's PDA
-    // pub fn get_reverse_key (id: &Pubkey, key: &Pubkey, root: Pubkey) -> Result<Pubkey> {
-    //     //seeds composition: domain account's pubkey
-    //     let hased_reverse_look_up = get_hashed_name(&key.to_string());
-    //     let (reverse_lookup_key, _) = get_seeds_and_key(
-    //         id,
-    //         hased_reverse_look_up,
-    //         &Some(root),
-    //     );
-    //     Ok(reverse_lookup_key)
-    // }
 
 
 
@@ -258,9 +227,6 @@ pub mod Utils{
     pub fn get_special_discount_and_fee (referrer_key: &Pubkey) -> (Option<u8>, Option<u8>) {
         (Some(1), Some(2))
     }
-
-
-
 
 
 
